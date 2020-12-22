@@ -30,15 +30,7 @@
 #include "testutil.hpp"
 #include "testutil_unity.hpp"
 
-void setUp ()
-{
-    setup_test_context ();
-}
-
-void tearDown ()
-{
-    teardown_test_context ();
-}
+SETUP_TEARDOWN_TESTCONTEXT
 
 void test_req_correlate ()
 {
@@ -48,10 +40,6 @@ void test_req_correlate ()
     int enabled = 1;
     TEST_ASSERT_SUCCESS_ERRNO (
       zmq_setsockopt (req, ZMQ_REQ_CORRELATE, &enabled, sizeof (int)));
-
-    int rcvtimeo = 100;
-    TEST_ASSERT_SUCCESS_ERRNO (
-      zmq_setsockopt (req, ZMQ_RCVTIMEO, &rcvtimeo, sizeof (int)));
 
     char my_endpoint[MAX_SOCKET_STRING];
     bind_loopback_ipv4 (router, my_endpoint, sizeof my_endpoint);
@@ -79,7 +67,7 @@ void test_req_correlate ()
 
     // Receive request id 1
     TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_recv (&msg, router, 0));
-    assert (zmq_msg_size (&msg) == sizeof (uint32_t));
+    TEST_ASSERT_EQUAL_UINT (sizeof (uint32_t), zmq_msg_size (&msg));
     const uint32_t req_id = *static_cast<uint32_t *> (zmq_msg_data (&msg));
     zmq_msg_t req_id_msg;
     zmq_msg_init (&req_id_msg);

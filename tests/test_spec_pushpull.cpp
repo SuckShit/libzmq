@@ -30,15 +30,10 @@
 #include "testutil.hpp"
 #include "testutil_unity.hpp"
 
-void setUp ()
-{
-    setup_test_context ();
-}
+#include <stdlib.h>
+#include <string.h>
 
-void tearDown ()
-{
-    teardown_test_context ();
-}
+SETUP_TEARDOWN_TESTCONTEXT
 
 char connect_address[MAX_SOCKET_STRING];
 
@@ -58,9 +53,6 @@ void test_push_round_robin_out (const char *bind_address_)
     for (size_t peer = 0; peer < services; ++peer) {
         pulls[peer] = test_context_socket (ZMQ_PULL);
 
-        int timeout = 250;
-        TEST_ASSERT_SUCCESS_ERRNO (
-          zmq_setsockopt (pulls[peer], ZMQ_RCVTIMEO, &timeout, sizeof (int)));
         TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (pulls[peer], connect_address));
     }
 
@@ -135,7 +127,7 @@ void test_pull_fair_queue_in (const char *bind_address_)
     for (size_t peer = 0; peer < services; ++peer) {
         TEST_ASSERT_EQUAL_INT (
           2, TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_recv (&msg, pull, 0)));
-        const char *str = (const char *) zmq_msg_data (&msg);
+        const char *str = static_cast<const char *> (zmq_msg_data (&msg));
         first_half -= str[0];
     }
     TEST_ASSERT_EQUAL_INT (0, first_half);
@@ -144,7 +136,7 @@ void test_pull_fair_queue_in (const char *bind_address_)
     for (size_t peer = 0; peer < services; ++peer) {
         TEST_ASSERT_EQUAL_INT (
           2, TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_recv (&msg, pull, 0)));
-        const char *str = (const char *) zmq_msg_data (&msg);
+        const char *str = static_cast<const char *> (zmq_msg_data (&msg));
         second_half -= str[0];
     }
     TEST_ASSERT_EQUAL_INT (0, second_half);
@@ -242,7 +234,7 @@ void test_destroy_queue_on_disconnect (const char *bind_address_)
 
 // PUSH and PULL: SHALL either receive or drop multipart messages atomically.
 void test_push_multipart_atomic_drop (const char *bind_address_,
-                                      const bool block)
+                                      const bool block_)
 {
     int linger = 0;
     int hwm = 1;
@@ -317,7 +309,7 @@ void test_push_multipart_atomic_drop (const char *bind_address_,
     send_string_expect_success (push, "3", ZMQ_SNDMORE);
     TEST_ASSERT_SUCCESS_ERRNO (zmq_msg_init_size (&msg_data, len));
     memset (zmq_msg_data (&msg_data), 'c', len);
-    if (block) {
+    if (block_) {
         TEST_ASSERT_EQUAL_INT (len,
                                zmq_msg_send (&msg_data, push, ZMQ_SNDMORE));
     } else {

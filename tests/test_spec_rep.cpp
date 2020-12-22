@@ -30,29 +30,16 @@
 #include "testutil.hpp"
 #include "testutil_unity.hpp"
 
-#include <unity.h>
+#include <stdlib.h>
 
-void setUp ()
-{
-    setup_test_context ();
-}
-
-void tearDown ()
-{
-    teardown_test_context ();
-}
+SETUP_TEARDOWN_TESTCONTEXT
 
 char connect_address[MAX_SOCKET_STRING];
 
-void test_fair_queue_in (const char *bind_address)
+void test_fair_queue_in (const char *bind_address_)
 {
     void *rep = test_context_socket (ZMQ_REP);
-
-    int timeout = 250;
-    TEST_ASSERT_SUCCESS_ERRNO (
-      zmq_setsockopt (rep, ZMQ_RCVTIMEO, &timeout, sizeof (int)));
-
-    TEST_ASSERT_SUCCESS_ERRNO (zmq_bind (rep, bind_address));
+    TEST_ASSERT_SUCCESS_ERRNO (zmq_bind (rep, bind_address_));
     size_t len = MAX_SOCKET_STRING;
     TEST_ASSERT_SUCCESS_ERRNO (
       zmq_getsockopt (rep, ZMQ_LAST_ENDPOINT, connect_address, &len));
@@ -62,8 +49,6 @@ void test_fair_queue_in (const char *bind_address)
     for (size_t peer = 0; peer < services; ++peer) {
         reqs[peer] = test_context_socket (ZMQ_REQ);
 
-        TEST_ASSERT_SUCCESS_ERRNO (
-          zmq_setsockopt (reqs[peer], ZMQ_RCVTIMEO, &timeout, sizeof (int)));
         TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (reqs[peer], connect_address));
     }
 
@@ -106,11 +91,11 @@ void test_fair_queue_in (const char *bind_address)
         test_context_socket_close_zero_linger (reqs[peer]);
 }
 
-void test_envelope (const char *bind_address)
+void test_envelope (const char *bind_address_)
 {
     void *rep = test_context_socket (ZMQ_REP);
 
-    TEST_ASSERT_SUCCESS_ERRNO (zmq_bind (rep, bind_address));
+    TEST_ASSERT_SUCCESS_ERRNO (zmq_bind (rep, bind_address_));
     size_t len = MAX_SOCKET_STRING;
     TEST_ASSERT_SUCCESS_ERRNO (
       zmq_getsockopt (rep, ZMQ_LAST_ENDPOINT, connect_address, &len));
